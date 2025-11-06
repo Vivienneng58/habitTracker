@@ -1,33 +1,35 @@
 <template>
-  <!-- 月份切换 -->
-  <div class="month-switch">
-    <button @click="prevMonth" class="switch-btn">←</button>
-    <span>{{ monthNames[currentMonth] }} {{ currentYear }}</span>
-    <button @click="nextMonth" class="switch-btn">→</button>
-  </div>
+  <!-- 年份与月份选择 -->
+  <div class="month-selector">
+    <select v-model="selectedYear" @change="updateCalendar">
+      <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+    </select>
 
-  <!-- 星期标题 -->
-  <div class="weekdays">
-    <div v-for="day in weekDays" :key="day" class="weekday">{{ day }}</div>
+    <select v-model="selectedMonth" @change="updateCalendar">
+      <option v-for="(monthName, index) in monthNames" :key="index" :value="index">
+        {{ monthName }}
+      </option>
+    </select>
   </div>
 
   <!-- 日历 -->
   <div class="calendar">
+    <div class="weekday" v-for="day in weekDays" :key="day">{{ day }}</div>
+
     <div
-      v-for="(day, index) in calendarDays"
-      :key="index"
+      v-for="day in calendarDays"
+      :key="day.date"
       class="calendar-day"
-      :class="{ empty: !day, today: isToday(day) }"
-      @click="day && openAddHabit(day)"
+      :class="{ empty: !day.date, today: isToday(day.date) }"
+      @click="day.date && openAddHabit(day.date)"
     >
-      <div v-if="day" class="date">{{ new Date(day).getDate() }}</div>
-      <!-- 当天的habit -->
-      <ul v-if="day" class="habit-list" @click.stop>
-        <li v-for="(habit, index) in habitsByDate[day]" :key="index" class="habit-item">
+      <div v-if="day.date" class="date">{{ new Date(day.date).getDate() }}</div>
+
+      <!-- habits -->
+      <ul v-if="day.date" class="habit-list" @click.stop>
+        <li v-for="(habit, index) in habitsByDate[day.date]" :key="index" class="habit-item">
           {{ habit }}
-          <button class="delete-btn" @click="deleteHabit(day, index)" title="Delete habit">
-            ✕
-          </button>
+          <button class="delete-btn" @click="deleteHabit(day.date, index)">✕</button>
         </li>
       </ul>
     </div>
@@ -49,18 +51,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-// === State ===
-const today = new Date()
-const currentYear = ref(today.getFullYear())
-const currentMonth = ref(today.getMonth())
+// localStorage habits
 const habitsByDate = ref<Record<string, string[]>>(
   JSON.parse(localStorage.getItem('habitsByDate') || '{}'),
 )
+
+const today = new Date()
 const showDialog = ref(false)
 const selectedDate = ref('')
 const newHabit = ref('')
 
-// === Display strings ===
+// 月份名称 & 星期标题
 const monthNames = [
   'January',
   'February',
@@ -77,34 +78,50 @@ const monthNames = [
 ]
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-// === Computed month text ===
-const monthYear = computed(() => `${monthNames[currentMonth.value]} ${currentYear.value}`)
+// 选择的年月
+const selectedYear = ref(today.getFullYear())
+const selectedMonth = ref(today.getMonth())
 
-// === Real calendar structure ===
-const calendarDays = computed(() => {
-  const days: (string | null)[] = []
-  const firstDay = new Date(currentYear.value, currentMonth.value, 1)
-  const totalDays = new Date(currentYear.value, currentMonth.value + 1, 0).getDate()
-
-  // 前面补空位 (对齐星期)
-  const startWeekday = firstDay.getDay()
-  for (let i = 0; i < startWeekday; i++) {
-    days.push(null)
-  }
-
-  // 加入日期
-  for (let d = 1; d <= totalDays; d++) {
-    const dateStr = `${currentYear.value}-${String(currentMonth.value + 1).padStart(
-      2,
-      '0',
-    )}-${String(d).padStart(2, '0')}`
-    days.push(dateStr)
-  }
-
-  return days
+// 年份范围（例如从2020到2030）
+const yearOptions = computed(() => {
+  const years = []
+  for (let y = 2020; y <= 2030; y++) years.push(y)
+  return years
 })
 
-// === 功能函数 ===
+// 根据月份生成真实日历
+const calendarDays = ref<{ date: string | null }[]>([])
+
+const updateCalendar = () => {
+  const year = selectedYear.value
+  const month = selectedMonth.value
+
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+
+  const startDayOfWeek = firstDay.getDay()
+  const totalDays = lastDay.getDate()
+
+  const tempDays: { date: string | null }[] = []
+
+  // 前面空格
+  for (let i = 0; i < startDayOfWeek; i++) {
+    tempDays.push({ date: null })
+  }
+
+  // 填充当月的日期
+  for (let d = 1; d <= totalDays; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    tempDays.push({ date: dateStr })
+  }
+
+  calendarDays.value = tempDays
+}
+
+// 初始生成
+updateCalendar()
+
+// 判断今天
 const isToday = (dateStr: string | null) => {
   if (!dateStr) return false
   const d = new Date(dateStr)
@@ -115,12 +132,14 @@ const isToday = (dateStr: string | null) => {
   )
 }
 
+// 打开弹窗
 const openAddHabit = (date: string) => {
   selectedDate.value = date
   newHabit.value = ''
   showDialog.value = true
 }
 
+// 添加habit
 const addHabitForDate = () => {
   if (!newHabit.value.trim()) return
   if (!habitsByDate.value[selectedDate.value]) {
@@ -131,72 +150,36 @@ const addHabitForDate = () => {
   closeDialog()
 }
 
+// 删除habit
 const deleteHabit = (date: string, index: number) => {
   habitsByDate.value[date].splice(index, 1)
-  if (habitsByDate.value[date].length === 0) delete habitsByDate.value[date]
+  if (habitsByDate.value[date].length === 0) {
+    delete habitsByDate.value[date]
+  }
   saveToLocal()
 }
 
+// 保存到localStorage
 const saveToLocal = () => {
   localStorage.setItem('habitsByDate', JSON.stringify(habitsByDate.value))
 }
 
+// 关闭弹窗
 const closeDialog = () => {
   showDialog.value = false
-}
-
-// === 月份切换 ===
-const prevMonth = () => {
-  if (currentMonth.value === 0) {
-    currentMonth.value = 11
-    currentYear.value--
-  } else {
-    currentMonth.value--
-  }
-}
-
-const nextMonth = () => {
-  if (currentMonth.value === 11) {
-    currentMonth.value = 0
-    currentYear.value++
-  } else {
-    currentMonth.value++
-  }
 }
 </script>
 
 <style scoped>
-/* 月份切换 */
-.month-switch {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
-}
-.switch-btn {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
-}
-.switch-btn:hover {
-  opacity: 0.8;
+.month-selector {
+  margin-bottom: 20px;
 }
 
-/* 星期栏 */
-.weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  font-weight: bold;
-  color: #555;
-  margin-bottom: 6px;
-}
-.weekday {
-  text-align: center;
+select {
+  padding: 6px 10px;
+  margin: 0 5px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
 }
 
 /* Calendar */
@@ -206,56 +189,64 @@ const nextMonth = () => {
   gap: 6px;
 }
 
+.weekday {
+  font-weight: bold;
+  background-color: #f0f0f0;
+  padding: 6px;
+  border-radius: 4px;
+}
+
 .calendar-day {
   border: 1px solid #ddd;
   border-radius: 6px;
-  padding: 4px;
   min-height: 90px;
   background-color: #fafafa;
   cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s;
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: background-color 0.2s;
+  justify-content: flex-start;
 }
+
 .calendar-day.empty {
-  background: none;
+  background-color: transparent;
   border: none;
   cursor: default;
 }
-.calendar-day:hover:not(.empty) {
+
+.calendar-day:hover {
   background-color: #e8f0fe;
 }
 
 .date {
   font-weight: bold;
-  width: 100%;
-  text-align: right;
-  padding-right: 5px;
-}
-.today .date {
-  color: #d6336c;
-  font-weight: 900;
+  margin: 4px;
+  align-self: flex-end;
 }
 
-/* Habit */
+.today {
+  border: 2px solid #007bff;
+}
+
 .habit-list {
   list-style: none;
   padding: 0;
   margin: 0;
   font-size: 13px;
-  width: 100%;
+  width: 90%;
 }
+
 .habit-item {
   background-color: #4caf50;
   color: white;
   border-radius: 4px;
   padding: 2px 4px;
   margin-top: 4px;
-  width: 90%;
-  text-align: center;
   position: relative;
 }
+
 .delete-btn {
   position: absolute;
   right: -5px;
@@ -267,9 +258,7 @@ const nextMonth = () => {
   font-size: 10px;
   width: 16px;
   height: 16px;
-  line-height: 14px;
   cursor: pointer;
-  transition: 0.2s;
 }
 .delete-btn:hover {
   background: #d9363e;
@@ -287,12 +276,14 @@ const nextMonth = () => {
   justify-content: center;
   align-items: center;
 }
+
 .dialog {
   background: white;
   padding: 20px;
   border-radius: 8px;
   width: 300px;
 }
+
 .input {
   width: 100%;
   padding: 6px;
@@ -300,11 +291,13 @@ const nextMonth = () => {
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+
 .dialog-buttons {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
+
 .btn {
   background-color: #007bff;
   color: white;
@@ -313,9 +306,11 @@ const nextMonth = () => {
   border-radius: 4px;
   cursor: pointer;
 }
+
 .btn.cancel {
   background-color: #aaa;
 }
+
 .btn:hover {
   opacity: 0.9;
 }
