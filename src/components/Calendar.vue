@@ -12,6 +12,12 @@
     </select>
   </div>
 
+  <!-- ✅ 新增统计栏 -->
+  <div class="stats">
+    <div><strong>Current Streak:</strong> {{ streak }} days</div>
+    <div><strong>Monthly Consistency:</strong> {{ monthlyConsistency }}%</div>
+  </div>
+
   <!-- 日历 -->
   <div class="calendar">
     <div class="weekday" v-for="day in weekDays" :key="day">{{ day }}</div>
@@ -49,9 +55,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
-// localStorage habits
 const habitsByDate = ref<Record<string, string[]>>(
   JSON.parse(localStorage.getItem('habitsByDate') || '{}'),
 )
@@ -61,7 +66,6 @@ const showDialog = ref(false)
 const selectedDate = ref('')
 const newHabit = ref('')
 
-// 月份名称 & 星期标题
 const monthNames = [
   'January',
   'February',
@@ -78,50 +82,82 @@ const monthNames = [
 ]
 const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-// 选择的年月
 const selectedYear = ref(today.getFullYear())
 const selectedMonth = ref(today.getMonth())
 
-// 年份范围（例如从2020到2030）
 const yearOptions = computed(() => {
   const years = []
   for (let y = 2020; y <= 2030; y++) years.push(y)
   return years
 })
 
-// 根据月份生成真实日历
 const calendarDays = ref<{ date: string | null }[]>([])
 
 const updateCalendar = () => {
   const year = selectedYear.value
   const month = selectedMonth.value
-
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
-
   const startDayOfWeek = firstDay.getDay()
   const totalDays = lastDay.getDate()
-
   const tempDays: { date: string | null }[] = []
 
-  // 前面空格
-  for (let i = 0; i < startDayOfWeek; i++) {
-    tempDays.push({ date: null })
-  }
+  for (let i = 0; i < startDayOfWeek; i++) tempDays.push({ date: null })
 
-  // 填充当月的日期
   for (let d = 1; d <= totalDays; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     tempDays.push({ date: dateStr })
   }
-
   calendarDays.value = tempDays
 }
-
-// 初始生成
 updateCalendar()
 
-// 判断今天
+// ✅ 统计计算
+const streak = computed(() => {
+  // 获取所有有habit的日期
+  const allDates = Object.keys(habitsByDate.value).sort()
+  if (allDates.length === 0) return 0
+
+  let maxStreak = 0
+  let currentStreak = 0
+  let prevDate: Date | null = null
+
+  for (const dateStr of allDates) {
+    const date = new Date(dateStr)
+    if (!prevDate) {
+      currentStreak = 1
+    } else {
+      const diffDays = (date.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
+      if (diffDays === 1) {
+        currentStreak++
+      } else {
+        currentStreak = 1
+      }
+    }
+    maxStreak = Math.max(maxStreak, currentStreak)
+    prevDate = date
+  }
+
+  return maxStreak
+})
+
+const monthlyConsistency = computed(() => {
+  const year = selectedYear.value
+  const month = selectedMonth.value
+  const lastDay = new Date(year, month + 1, 0)
+  const totalDays = lastDay.getDate()
+
+  let completedDays = 0
+  for (let d = 1; d <= totalDays; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    if (habitsByDate.value[dateStr] && habitsByDate.value[dateStr].length > 0) {
+      completedDays++
+    }
+  }
+
+  return ((completedDays / totalDays) * 100).toFixed(1)
+})
+
 const isToday = (dateStr: string | null) => {
   if (!dateStr) return false
   const d = new Date(dateStr)
@@ -132,14 +168,12 @@ const isToday = (dateStr: string | null) => {
   )
 }
 
-// 打开弹窗
 const openAddHabit = (date: string) => {
   selectedDate.value = date
   newHabit.value = ''
   showDialog.value = true
 }
 
-// 添加habit
 const addHabitForDate = () => {
   if (!newHabit.value.trim()) return
   if (!habitsByDate.value[selectedDate.value]) {
@@ -150,7 +184,6 @@ const addHabitForDate = () => {
   closeDialog()
 }
 
-// 删除habit
 const deleteHabit = (date: string, index: number) => {
   habitsByDate.value[date].splice(index, 1)
   if (habitsByDate.value[date].length === 0) {
@@ -159,20 +192,34 @@ const deleteHabit = (date: string, index: number) => {
   saveToLocal()
 }
 
-// 保存到localStorage
 const saveToLocal = () => {
   localStorage.setItem('habitsByDate', JSON.stringify(habitsByDate.value))
 }
 
-// 关闭弹窗
 const closeDialog = () => {
   showDialog.value = false
 }
+
+// 当习惯或月份改变时自动刷新统计
+watch([habitsByDate, selectedMonth, selectedYear], () => {
+  updateCalendar()
+})
 </script>
 
 <style scoped>
 .month-selector {
+  margin-bottom: 10px;
+}
+
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
   margin-bottom: 20px;
+  font-size: 16px;
+  background-color: #f8f8f8;
+  padding: 10px;
+  border-radius: 6px;
 }
 
 select {
@@ -207,7 +254,6 @@ select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
 }
 
 .calendar-day.empty {
