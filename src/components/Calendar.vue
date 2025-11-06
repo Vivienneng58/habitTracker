@@ -1,13 +1,15 @@
 <template>
   <div class="container">
-    <h2 class="title">Habit Tracker</h2>
+    <h2 class="title">Habit Tracker - {{ monthYear }}</h2>
 
     <!-- 日历部分 -->
     <div class="calendar">
       <div v-for="day in daysOfMonth" :key="day" class="calendar-day" @click="openAddHabit(day)">
-        <div class="date">{{ new Date(day).getDate() }}</div>
+        <div class="date" :class="{ today: isToday(day) }">
+          {{ new Date(day).getDate() }}
+        </div>
 
-        <!-- 当天已添加的习惯 -->
+        <!-- 当天的习惯列表 -->
         <ul class="habit-list" @click.stop>
           <li v-for="(habit, index) in habitsByDate[day]" :key="index" class="habit-item">
             {{ habit }}
@@ -19,7 +21,7 @@
       </div>
     </div>
 
-    <!-- 添加习惯弹窗 -->
+    <!-- 添加habit弹窗 -->
     <div v-if="showDialog" class="dialog-overlay">
       <div class="dialog">
         <h3>Add Habit on {{ selectedDate }}</h3>
@@ -36,7 +38,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-// 用 localStorage 保存用户数据
+// 保存习惯数据
 const habitsByDate = ref<Record<string, string[]>>(
   JSON.parse(localStorage.getItem('habitsByDate') || '{}'),
 )
@@ -46,7 +48,12 @@ const showDialog = ref(false)
 const selectedDate = ref('')
 const newHabit = ref('')
 
-// 计算本月所有日期
+// 当前年月（显示用）
+const monthYear = computed(() =>
+  today.toLocaleString('default', { month: 'long', year: 'numeric' }),
+)
+
+// 计算本月日期
 const daysOfMonth = computed(() => {
   const days: string[] = []
   const date = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -60,7 +67,17 @@ const daysOfMonth = computed(() => {
   return days
 })
 
-// 打开添加habit的弹窗
+// 判断是否是今天
+const isToday = (dateStr: string) => {
+  const d = new Date(dateStr)
+  return (
+    d.getDate() === today.getDate() &&
+    d.getMonth() === today.getMonth() &&
+    d.getFullYear() === today.getFullYear()
+  )
+}
+
+// 打开添加habit弹窗
 const openAddHabit = (date: string) => {
   selectedDate.value = date
   newHabit.value = ''
@@ -82,7 +99,7 @@ const addHabitForDate = () => {
 const deleteHabit = (date: string, index: number) => {
   habitsByDate.value[date].splice(index, 1)
   if (habitsByDate.value[date].length === 0) {
-    delete habitsByDate.value[date] // 删除空日期
+    delete habitsByDate.value[date]
   }
   saveToLocal()
 }
@@ -139,6 +156,14 @@ const closeDialog = () => {
 .date {
   font-weight: bold;
   margin-bottom: 4px;
+  width: 100%;
+  text-align: right;
+  padding-right: 5px;
+}
+
+.date.today {
+  color: #d6336c;
+  font-weight: 900;
 }
 
 .habit-list {
