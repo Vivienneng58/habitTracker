@@ -2,17 +2,19 @@
 
 ## Project Choice
 
-**Product Details:** A habit tracking application with a primary calendar interface.
+## The Habit Tracker with Calendar View
+
+•**Product Details:** A habit tracking application with a primary calendar interface.
 Users define habits and mark them complete on the calendar grid. The
 application calculates and displays statistics like completion streaks and
 monthly consistency.
 
-**Objective:** The objective is to build a motivational personal development tool
+•**Objective:** The objective is to build a motivational personal development tool
 that helps users establish and maintain habits. The application will provide a
 clear, visual representation of their progress through a calendar interface and
 insightful statistics.
 
-**Target User:** An individual focused on personal development who wants a
+•**Target User:** An individual focused on personal development who wants a
 visual and statistical way to track their daily or weekly habits.
 
 ## Justification of Tools
