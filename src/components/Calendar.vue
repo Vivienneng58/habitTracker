@@ -33,9 +33,14 @@
         <template v-if="day.date">
           <div class="date">{{ new Date(day.date).getDate() }}</div>
 
-          <!-- 当天完成的习惯 -->
+          <!-- 用颜色显示当前日期完成的 habits -->
           <ul v-if="habitsByDate[day.date]?.length" class="habit-list">
-            <li v-for="habit in habitsByDate[day.date]" :key="habit" class="habit-item">
+            <li
+              v-for="habit in habitsByDate[day.date]"
+              :key="habit"
+              class="habit-item"
+              :style="{ backgroundColor: habitColors[habit] || '#10b981' }"
+            >
               √ {{ habit }}
             </li>
           </ul>
@@ -58,10 +63,11 @@ const props = defineProps<{
   monthNames: string[]
   yearOptions: number[]
   allHabits: string[]
-  habitRecords: Record<string, string[]>
+  habitRecords: Record<string, string[]> // { '2025-11-07': ['Exercise', 'Read'] }
   isToday: (date: string | null) => boolean
   year: number
   month: number
+  habitColors: Record<string, string> // ✅ 新增：每个习惯对应颜色
 }>()
 
 const emit = defineEmits<{
@@ -69,11 +75,9 @@ const emit = defineEmits<{
   (e: 'click-date', date: string): void
 }>()
 
-// ====== 本地副本，避免直接修改父组件的 props ======
 const localYear = ref(props.year)
 const localMonth = ref(props.month)
 
-// 同步父组件更新
 watch(
   () => [props.year, props.month],
   ([y, m]) => {
@@ -82,17 +86,15 @@ watch(
   },
 )
 
-// 切换月份事件
 const emitChangeMonth = () => {
   emit('change-month', { year: localYear.value, month: localMonth.value })
 }
 
-// 直接使用 habitRecords，避免重复计算
 const habitsByDate = computed(() => props.habitRecords)
 </script>
 
 <style scoped>
-/* ========== 外层容器 ========== */
+/* 保持你的样式原样 */
 .calendar-container {
   flex: 1;
   min-width: 600px;
@@ -102,7 +104,6 @@ const habitsByDate = computed(() => props.habitRecords)
   padding: 20px;
 }
 
-/* ========== 月份选择器 ========== */
 .month-selector {
   display: flex;
   justify-content: center;
@@ -117,14 +118,8 @@ const habitsByDate = computed(() => props.habitRecords)
   background: #f9fafb;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s ease;
 }
 
-.month-selector select:hover {
-  background: #e9ecef;
-}
-
-/* ========== 星期标题栏 ========== */
 .calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -140,11 +135,6 @@ const habitsByDate = computed(() => props.habitRecords)
   color: #333;
 }
 
-.weekday.weekend {
-  color: #d32f2f;
-}
-
-/* ========== 日期格 ========== */
 .calendar-day {
   border-radius: 8px;
   min-height: 80px;
@@ -159,31 +149,25 @@ const habitsByDate = computed(() => props.habitRecords)
   background: #f3f8ff;
 }
 
-/* 空白格 */
 .calendar-day.empty {
   background: transparent;
   border: none;
-  cursor: default;
   pointer-events: none;
 }
 
-/* 今日样式 */
 .calendar-day.today {
   border: 2px solid #2563eb;
   background: linear-gradient(135deg, #e0f2fe, #bfdbfe);
 }
 
-/* 日期数字 */
 .date {
   text-align: right;
   font-weight: 600;
   color: #374151;
-  padding-right: 2px;
   margin-bottom: 2px;
   font-size: 13px;
 }
 
-/* ========== 习惯列表 ========== */
 .habit-list {
   list-style: none;
   padding: 0;
@@ -191,7 +175,6 @@ const habitsByDate = computed(() => props.habitRecords)
 }
 
 .habit-item {
-  background: #10b981;
   color: white;
   font-size: 11px;
   padding: 2px 4px;

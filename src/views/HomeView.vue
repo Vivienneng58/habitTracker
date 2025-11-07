@@ -10,6 +10,10 @@ const allHabits = ref<string[]>(JSON.parse(localStorage.getItem('allHabits') || 
 const habitRecords = ref<Record<string, string[]>>(
   JSON.parse(localStorage.getItem('habitRecords') || '{}'),
 )
+// 🟢 新增：存储每个习惯对应颜色
+const habitColors = ref<Record<string, string>>(
+  JSON.parse(localStorage.getItem('habitColors') || '{}'),
+)
 
 // ============ UI 状态 ============
 const showAddHabitDialog = ref(false)
@@ -66,6 +70,13 @@ const isToday = (dateStr: string | null) => {
 const saveToLocal = () => {
   localStorage.setItem('allHabits', JSON.stringify(allHabits.value))
   localStorage.setItem('habitRecords', JSON.stringify(habitRecords.value))
+  localStorage.setItem('habitColors', JSON.stringify(habitColors.value))
+}
+
+// 🎨 生成随机颜色函数
+const generateColor = () => {
+  const colors = ['#22c55e', '#ef4444', '#3b82f6', '#f97316', '#a855f7', '#eab308', '#10b981']
+  return colors[Math.floor(Math.random() * colors.length)]
 }
 
 // 添加习惯
@@ -73,6 +84,8 @@ const addNewHabit = () => {
   const habit = newHabit.value.trim()
   if (!habit) return
   allHabits.value.push(habit)
+  // 🔵 为新 habit 分配颜色
+  habitColors.value[habit] = generateColor()
   saveToLocal()
   newHabit.value = ''
   showAddHabitDialog.value = false
@@ -81,6 +94,7 @@ const addNewHabit = () => {
 // 删除习惯并清理记录
 const deleteHabit = (habit: string) => {
   allHabits.value = allHabits.value.filter((h) => h !== habit)
+  delete habitColors.value[habit] // 🗑️ 删除颜色映射
   for (const date in habitRecords.value) {
     habitRecords.value[date] = habitRecords.value[date].filter((h) => h !== habit)
     if (!habitRecords.value[date].length) delete habitRecords.value[date]
@@ -147,13 +161,16 @@ const habitMonthlyConsistency = (habit: string) => {
       <h2 class="title">Habit Tracker</h2>
 
       <div class="layout">
+        <!-- Habit 组件传入颜色映射 -->
         <Habit
           :allHabits="allHabits"
           :habitStreak="habitStreak"
+          :habitColors="habitColors"
           @add="showAddHabitDialog = true"
           @delete="deleteHabit"
         />
 
+        <!-- Calendar 组件也传入 habitColors -->
         <Calendar
           :days="calendarDays"
           :weekDays="weekDays"
@@ -161,6 +178,7 @@ const habitMonthlyConsistency = (habit: string) => {
           :yearOptions="yearOptions"
           :allHabits="allHabits"
           :habitRecords="habitRecords"
+          :habitColors="habitColors"
           :isToday="isToday"
           :year="selectedYear"
           :month="selectedMonth"
@@ -198,6 +216,7 @@ const habitMonthlyConsistency = (habit: string) => {
               :key="habit"
               @click="toggleHabitForDate(habit)"
               class="habit-option"
+              :style="{ borderLeft: `6px solid ${habitColors[habit]}` }"
             >
               <span>{{ habit }}</span>
               <span>{{ isHabitDoneOnDate(habit, selectedDate) ? '✅' : '❌' }}</span>

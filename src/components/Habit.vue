@@ -9,6 +9,13 @@
         class="habit-item"
         :class="{ selected: selectedHabit === habit }"
       >
+        <!-- ✅ 左侧颜色圆点 -->
+        <span
+          class="habit-color-dot"
+          :style="{ backgroundColor: habitColors[habit] || '#3b82f6' }"
+        ></span>
+
+        <!-- 习惯信息 -->
         <div class="habit-info" @click="$emit('select', habit)">
           <div class="habit-name">{{ habit }}</div>
           <div class="habit-streak">🔥 {{ habitStreak(habit) }} days</div>
@@ -29,6 +36,7 @@ defineProps<{
   allHabits: string[]
   selectedHabit: string | null
   habitStreak: (habit: string) => number
+  habitColors: Record<string, string> // ✅ 新增：颜色映射
 }>()
 
 defineEmits(['select', 'delete', 'add'])
@@ -65,8 +73,9 @@ defineEmits(['select', 'delete', 'add'])
 
 .habit-item {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 8px;
   background: #ffffff;
   border: 1px solid #e3e8ef;
   border-radius: 8px;
@@ -74,6 +83,15 @@ defineEmits(['select', 'delete', 'add'])
   margin-bottom: 8px;
   transition: all 0.25s ease;
   cursor: pointer;
+}
+
+/* ✅ 新增：颜色圆点 */
+.habit-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid #ccc;
 }
 
 /* === 习惯信息 === */
