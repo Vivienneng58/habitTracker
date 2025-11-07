@@ -2,7 +2,7 @@
 
 ## Project Choice
 
-# The Habit Tracker with Calendar View
+The Habit Tracker with Calendar View
 
 - **Product Details:** A habit tracking application with a primary calendar interface.
 Users define habits and mark them complete on the calendar grid. The
