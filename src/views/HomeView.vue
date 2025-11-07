@@ -325,26 +325,4 @@ const saveToLocal = () => {
 .btn:not(.cancel):hover {
   background: #2563eb;
 }
-
-/* ======= Habit Select List ======= */
-.habit-select-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 16px 0;
-}
-
-.habit-option {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  cursor: pointer;
-}
-
-.habit-option:hover {
-  background: #f3f4f6;
-}
 </style>
