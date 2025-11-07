@@ -117,18 +117,20 @@ const isHabitDoneOnDate = (habit: string, date: string) => {
 // ====================== 统计 ======================
 
 // streak：某 habit 连续完成天数
-const habitStreak = (habit: string) => {
-  let streak = 0
-  const currentDate = new Date(today)
-  while (true) {
-    const dateStr = currentDate.toISOString().split('T')[0]
-    if (habitRecords.value[dateStr]?.includes(habit)) {
-      streak++
-      currentDate.setDate(currentDate.getDate() - 1)
-    } else break
+const habitStreak = computed(() => {
+  return (habit: string) => {
+    let streak = 0
+    const currentDate = new Date(today)
+    while (true) {
+      const dateStr = currentDate.toISOString().split('T')[0]
+      if (habitRecords.value[dateStr]?.includes(habit)) {
+        streak++
+        currentDate.setDate(currentDate.getDate() - 1)
+      } else break
+    }
+    return streak
   }
-  return streak
-}
+})
 
 // consistency：某 habit 本月完成比例
 const habitMonthlyConsistency = (habit: string) => {
@@ -232,59 +234,117 @@ const saveToLocal = () => {
   max-width: 1100px;
   margin: 30px auto;
   text-align: center;
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #2d3748;
 }
 
 .layout {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  justify-content: center;
 }
 
+/* ======= Dialog Overlay ======= */
 .dialog-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
+  inset: 0;
+  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 100;
+  z-index: 200;
 }
 
+/* ======= Dialog Box ======= */
 .dialog {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 320px;
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  width: 360px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
+.dialog h3 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  color: #2d3748;
+}
+
+/* ======= Input ======= */
 .input {
-  width: 100%;
-  padding: 6px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  width: 200px;
+  padding: 10px 12px;
+  margin: 10px 0 16px 0;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
 }
 
+.input:focus {
+  border-color: #3b82f6;
+}
+
+/* ======= Buttons ======= */
+.dialog-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn.cancel {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.btn.cancel:hover {
+  background: #d1d5db;
+}
+
+.btn:not(.cancel) {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn:not(.cancel):hover {
+  background: #2563eb;
+}
+
+/* ======= Habit Select List ======= */
 .habit-select-list {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 0 0 16px 0;
 }
 
 .habit-option {
   display: flex;
   justify-content: space-between;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  margin-bottom: 6px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
   cursor: pointer;
 }
+
 .habit-option:hover {
-  background: #f0f0f0;
+  background: #f3f4f6;
 }
 </style>

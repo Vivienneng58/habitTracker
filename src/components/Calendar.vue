@@ -24,24 +24,17 @@
 
       <!-- 日期格 -->
       <div
-        v-for="day in days"
-        :key="day.date || Math.random()"
+        v-for="(day, index) in days"
+        :key="day.date ? `day-${day.date}` : `empty-${index}`"
         class="calendar-day"
-        :class="{
-          today: isToday(day.date),
-          empty: !day.date,
-        }"
-        @click="day.date && $emit('click-date', day.date)"
+        :class="{ today: isToday(day.date), empty: !day.date }"
+        @click="() => day.date && $emit('click-date', day.date)"
       >
         <div v-if="day.date" class="date">{{ new Date(day.date).getDate() }}</div>
 
         <!-- ✅ 当天完成的习惯 -->
         <ul v-if="day.date" class="habit-list">
-          <li
-            v-for="habit in allHabits.filter((h) => habitRecords[h]?.includes(day.date))"
-            :key="habit"
-            class="habit-item"
-          >
+          <li v-for="habit in habitsByDate[day.date] || []" :key="habit" class="habit-item">
             ✅ {{ habit }}
           </li>
         </ul>
@@ -51,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 
 const props = defineProps<{
   days: { date: string | null }[]
@@ -78,6 +71,11 @@ watch([() => props.year, () => props.month], ([y, m]) => {
 const emitChangeMonth = () => {
   emit('change-month', { year: localYear.value, month: localMonth.value })
 }
+
+// ✅ 修复后的 habitsByDate
+const habitsByDate = computed(() => {
+  return props.habitRecords || {}
+})
 </script>
 
 <style scoped>
@@ -89,7 +87,6 @@ const emitChangeMonth = () => {
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   padding: 20px;
-  transition: all 0.3s ease;
 }
 
 /* === 月份选择器 === */
@@ -107,7 +104,6 @@ const emitChangeMonth = () => {
   font-size: 14px;
   background: #f8f9fa;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .month-selector select:hover {
@@ -141,14 +137,12 @@ const emitChangeMonth = () => {
   background-color: #fafafa;
   box-shadow: inset 0 0 0 1px #e0e0e0;
   position: relative;
-  transition: all 0.25s ease;
   cursor: pointer;
   padding: 4px;
 }
 
 .calendar-day:hover {
   background: #f3f8ff;
-  transform: scale(1.03);
 }
 
 /* 空白格 */
@@ -156,6 +150,7 @@ const emitChangeMonth = () => {
   background: transparent;
   box-shadow: none;
   cursor: default;
+  pointer-events: none;
 }
 
 /* 当天 */
