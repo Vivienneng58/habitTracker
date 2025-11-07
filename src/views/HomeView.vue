@@ -4,24 +4,18 @@ import Calendar from '@/components/Calendar.vue'
 import Habit from '@/components/Habit.vue'
 import Consistency from '@/components/Consistency.vue'
 
-// ============ 数据初始化 ============
+// initial state
 const today = new Date()
 const allHabits = ref<string[]>(JSON.parse(localStorage.getItem('allHabits') || '[]'))
 const habitRecords = ref<Record<string, string[]>>(
   JSON.parse(localStorage.getItem('habitRecords') || '{}'),
 )
-// 🟢 新增：存储每个习惯对应颜色
-const habitColors = ref<Record<string, string>>(
-  JSON.parse(localStorage.getItem('habitColors') || '{}'),
-)
-
-// ============ UI 状态 ============
 const showAddHabitDialog = ref(false)
 const showSelectHabitDialog = ref(false)
 const newHabit = ref('')
 const selectedDate = ref('')
 
-// ============ 日历控制 ============
+// calendar state
 const selectedYear = ref(today.getFullYear())
 const selectedMonth = ref(today.getMonth())
 
@@ -42,7 +36,7 @@ const monthNames = [
 ]
 const yearOptions = Array.from({ length: 6 }, (_, i) => today.getFullYear() - 3 + i)
 
-// 生成当月日期数据
+// generate calendar days
 const calendarDays = computed(() => {
   const year = selectedYear.value
   const month = selectedMonth.value
@@ -59,27 +53,43 @@ const calendarDays = computed(() => {
   return days
 })
 
-// 是否今天
+// get today
 const isToday = (dateStr: string | null) => {
   if (!dateStr) return false
   const d = new Date(dateStr)
   return d.toDateString() === today.toDateString()
 }
 
-// ============ 操作逻辑 ============
+// save data to localStorage
 const saveToLocal = () => {
   localStorage.setItem('allHabits', JSON.stringify(allHabits.value))
   localStorage.setItem('habitRecords', JSON.stringify(habitRecords.value))
   localStorage.setItem('habitColors', JSON.stringify(habitColors.value))
 }
 
-// 🎨 生成随机颜色函数
+// generate color for each habit
+const habitColors = ref<Record<string, string>>(
+  JSON.parse(localStorage.getItem('habitColors') || '{}'),
+)
+
+const colors = ['#22c55e', '#ef4444', '#3b82f6', '#f97316', '#a855f7', '#eab308', '#10b981']
+
 const generateColor = () => {
-  const colors = ['#22c55e', '#ef4444', '#3b82f6', '#f97316', '#a855f7', '#eab308', '#10b981']
-  return colors[Math.floor(Math.random() * colors.length)]
+  const usedColors = Object.values(habitColors.value)
+  const availableColors = colors.filter(c => !usedColors.includes(c))
+
+  if (availableColors.length > 0) {
+    // 随机选择一个
+    return availableColors[Math.floor(Math.random() * availableColors.length)]
+  } else {
+    // 全部用完，避免连续重复
+    const lastColor = usedColors[usedColors.length - 1]
+    const nextColor = colors.find(c => c !== lastColor) || colors[0]
+    return nextColor
+  }
 }
 
-// 添加习惯
+// add habit
 const addNewHabit = () => {
   const habit = newHabit.value.trim()
   if (!habit) return
@@ -91,10 +101,10 @@ const addNewHabit = () => {
   showAddHabitDialog.value = false
 }
 
-// 删除习惯并清理记录
+// delete habit
 const deleteHabit = (habit: string) => {
   allHabits.value = allHabits.value.filter((h) => h !== habit)
-  delete habitColors.value[habit] // 🗑️ 删除颜色映射
+  delete habitColors.value[habit] // delete color mapping
   for (const date in habitRecords.value) {
     habitRecords.value[date] = habitRecords.value[date].filter((h) => h !== habit)
     if (!habitRecords.value[date].length) delete habitRecords.value[date]
@@ -102,13 +112,13 @@ const deleteHabit = (habit: string) => {
   saveToLocal()
 }
 
-// 点击日期 => 打开习惯选择
+// open dialog to select habits for a date
 const openSelectHabitDialog = (date: string) => {
   selectedDate.value = date
   showSelectHabitDialog.value = true
 }
 
-// 选中日期标记习惯完成
+// record/unrecord habit for selected date
 const toggleHabitForDate = (habit: string) => {
   const date = selectedDate.value
   if (!date) return
@@ -120,11 +130,11 @@ const toggleHabitForDate = (habit: string) => {
   saveToLocal()
 }
 
-// 某天是否完成某习惯
+// check if habit is done on a date
 const isHabitDoneOnDate = (habit: string, date: string) =>
   habitRecords.value[date]?.includes(habit) ?? false
 
-// ============ 统计 ============
+// habit streak calculation
 const habitStreak = computed(() => (habit: string) => {
   const completed = Object.keys(habitRecords.value)
     .filter((d) => habitRecords.value[d].includes(habit))
@@ -161,40 +171,21 @@ const habitMonthlyConsistency = (habit: string) => {
       <h2 class="title">Habit Tracker</h2>
 
       <div class="layout">
-        <!-- Habit 组件传入颜色映射 -->
-        <Habit
-          :allHabits="allHabits"
-          :habitStreak="habitStreak"
-          :habitColors="habitColors"
-          @add="showAddHabitDialog = true"
-          @delete="deleteHabit"
-        />
-
-        <!-- Calendar 组件也传入 habitColors -->
-        <Calendar
-          :days="calendarDays"
-          :weekDays="weekDays"
-          :monthNames="monthNames"
-          :yearOptions="yearOptions"
-          :allHabits="allHabits"
-          :habitRecords="habitRecords"
-          :habitColors="habitColors"
-          :isToday="isToday"
-          :year="selectedYear"
-          :month="selectedMonth"
-          @change-month="
+        <Habit :allHabits="allHabits" :habitStreak="habitStreak" :habitColors="habitColors"
+          @add="showAddHabitDialog = true" @delete="deleteHabit" />
+        <Calendar :days="calendarDays" :weekDays="weekDays" :monthNames="monthNames" :yearOptions="yearOptions"
+          :allHabits="allHabits" :habitRecords="habitRecords" :habitColors="habitColors" :isToday="isToday"
+          :year="selectedYear" :month="selectedMonth" @change-month="
             ({ year, month }) => {
               selectedYear = year
               selectedMonth = month
             }
-          "
-          @click-date="openSelectHabitDialog"
-        />
+          " @click-date="openSelectHabitDialog" />
       </div>
+      <Consistency :allHabits="allHabits" :habitMonthlyConsistency="habitMonthlyConsistency"
+        :habitColors="habitColors" />
 
-      <Consistency :allHabits="allHabits" :habitMonthlyConsistency="habitMonthlyConsistency" />
-
-      <!-- 添加 Habit -->
+      <!-- Popout box -->
       <div v-if="showAddHabitDialog" class="dialog-overlay">
         <div class="dialog">
           <h3>Add New Habit</h3>
@@ -205,19 +196,12 @@ const habitMonthlyConsistency = (habit: string) => {
           </div>
         </div>
       </div>
-
-      <!-- 标记 Habit 完成 -->
       <div v-if="showSelectHabitDialog" class="dialog-overlay">
         <div class="dialog">
           <h3>Mark Habits for {{ selectedDate }}</h3>
           <ul class="habit-select-list">
-            <li
-              v-for="habit in allHabits"
-              :key="habit"
-              @click="toggleHabitForDate(habit)"
-              class="habit-option"
-              :style="{ borderLeft: `6px solid ${habitColors[habit]}` }"
-            >
+            <li v-for="habit in allHabits" :key="habit" @click="toggleHabitForDate(habit)" class="habit-option"
+              :style="{ borderLeft: `6px solid ${habitColors[habit]}` }">
               <span>{{ habit }}</span>
               <span>{{ isHabitDoneOnDate(habit, selectedDate) ? '✅' : '❌' }}</span>
             </li>
@@ -253,7 +237,6 @@ const habitMonthlyConsistency = (habit: string) => {
   align-items: flex-start;
 }
 
-/* ======= Dialog ======= */
 .dialog-overlay {
   position: fixed;
   inset: 0;

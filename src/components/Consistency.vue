@@ -31,15 +31,17 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 const props = defineProps<{
   allHabits: string[]
   habitMonthlyConsistency: (habit: string) => string
+  habitColors: Record<string, string>
 }>()
 
+// 使用 habitColors 动态生成每个柱子的颜色
 const chartData = computed(() => ({
   labels: props.allHabits,
   datasets: [
     {
       label: 'Completion (%)',
-      backgroundColor: '#4CAF50',
-      data: props.allHabits.map((h) => Number(props.habitMonthlyConsistency(h))),
+      data: props.allHabits.map(habit => Number(props.habitMonthlyConsistency(habit))),
+      backgroundColor: props.allHabits.map(habit => props.habitColors[habit] || '#4CAF50'),
       borderRadius: 4,
       barThickness: 18,
     },
@@ -54,31 +56,19 @@ const chartOptions = {
       beginAtZero: true,
       max: 100,
       ticks: {
-        stepSize: 25, // 👈 每隔25%显示一次
+        stepSize: 25,
         callback: (value: number) => value + '%',
-        font: {
-          size: 10,
-        },
+        font: { size: 10 },
       },
-      grid: {
-        color: '#f1f1f1',
-      },
+      grid: { color: '#f1f1f1' },
     },
     x: {
-      ticks: {
-        font: {
-          size: 10,
-        },
-      },
-      grid: {
-        display: false,
-      },
+      ticks: { font: { size: 10 } },
+      grid: { display: false },
     },
   },
   plugins: {
-    legend: {
-      display: false,
-    },
+    legend: { display: false },
     tooltip: {
       callbacks: {
         label: (context: any) => `${context.parsed.y.toFixed(1)}%`,
@@ -98,7 +88,7 @@ const chartOptions = {
 }
 
 .chart-wrapper {
-  height: 200px;
+  height: 300px;
 }
 
 .no-data {
