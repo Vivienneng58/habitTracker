@@ -1,36 +1,35 @@
 <template>
   <div class="calendar-container">
     <div class="month-selector">
-      <select
-        :value="year"
-        @change="$emit('update:year', +$event.target.value)"
-      >
-        <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+      <select v-model="localYear" @change="emitChangeMonth">
+        <option v-for="y in yearOptions" :key="y">{{ y }}</option>
       </select>
-
-      <select
-        :value="month"
-        @change="$emit('update:month', +$event.target.value)"
-      >
+      <select v-model="localMonth" @change="emitChangeMonth">
         <option v-for="(m, i) in monthNames" :key="i" :value="i">{{ m }}</option>
       </select>
     </div>
 
     <div class="calendar">
       <div class="weekday" v-for="d in weekDays" :key="d">{{ d }}</div>
+
       <div
         v-for="day in days"
         :key="day.date"
         class="calendar-day"
         :class="{ today: isToday(day.date) }"
-        @click="day.date && $emit('toggle', day.date)"
+        @click="day.date && $emit('click-date', day.date)"
       >
         <div v-if="day.date" class="date">{{ new Date(day.date).getDate() }}</div>
-        <ul
-          v-if="selectedHabit && day.date && isHabitDoneOnDate(selectedHabit, day.date)"
-          class="habit-list"
-        >
-          <li class="habit-item">✅ {{ selectedHabit }}</li>
+
+        <!-- 显示当天完成的所有 habits -->
+        <ul v-if="day.date" class="habit-list">
+          <li
+            v-for="habit in allHabits.filter((h) => habitRecords[day.date]?.includes(h))"
+            :key="habit"
+            class="habit-item"
+          >
+            ✅ {{ habit }}
+          </li>
         </ul>
       </div>
     </div>
@@ -38,19 +37,33 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { ref, watch } from 'vue'
+
+const props = defineProps<{
   days: { date: string | null }[]
   weekDays: string[]
   monthNames: string[]
   yearOptions: number[]
-  selectedHabit: string | null
-  isHabitDoneOnDate: (habit: string, date: string) => boolean
+  allHabits: string[]
+  habitRecords: Record<string, string[]>
   isToday: (date: string | null) => boolean
   year: number
   month: number
 }>()
 
-defineEmits(["toggle", "update:year", "update:month"])
+const emit = defineEmits(['change-month', 'click-date'])
+
+const localYear = ref(props.year)
+const localMonth = ref(props.month)
+
+watch([() => props.year, () => props.month], ([y, m]) => {
+  localYear.value = y
+  localMonth.value = m
+})
+
+const emitChangeMonth = () => {
+  emit('change-month', { year: localYear.value, month: localMonth.value })
+}
 </script>
 
 <style scoped>
@@ -96,9 +109,9 @@ defineEmits(["toggle", "update:year", "update:month"])
 .habit-item {
   background: #4caf50;
   color: white;
-  font-size: 13px;
+  font-size: 12px;
   padding: 2px 4px;
   border-radius: 4px;
-  margin: 3px;
+  margin: 2px;
 }
 </style>
