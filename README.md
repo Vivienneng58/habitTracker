@@ -1,23 +1,45 @@
-## Recommended IDE Setup
+# Habit Tracker
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Project Choice
 
-## Recommended Browser Setup
+**Product Details:** A habit tracking application with a primary calendar interface.
+Users define habits and mark them complete on the calendar grid. The
+application calculates and displays statistics like completion streaks and
+monthly consistency.
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+**Objective:** The objective is to build a motivational personal development tool
+that helps users establish and maintain habits. The application will provide a
+clear, visual representation of their progress through a calendar interface and
+insightful statistics.
 
-## Type Support for `.vue` Imports in TS
+**Target User:** An individual focused on personal development who wants a
+visual and statistical way to track their daily or weekly habits.
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+## Justification of Tools
 
-## Customize configuration
+- **Vue 3 + Composition API**: Provides modular, reactive component design for building a clean and maintainable frontend.
+- **Chart.js + vue-chartjs**: Offers a simple and flexible way to render statistical visualizations like bar and line charts.
+- **TypeScript**: Adds type safety and improves code readability.
+- **LocalStorage**: Used for simple data persistence without a backend.
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## High-Level Approach
+
+The project was built using a **component-based approach**:
+
+- `Habit.vue` → Displays and manages the list of habits.
+- `Calendar.vue` → Displays the monthly calendar view where users can mark habits as complete.
+- `Consistency.vue` → Renders a monthly consistency chart using Chart.js.
+- `HabitTracker.vue` → Acts as the main controller handling all data, logic, and local storage.
+
+Data flow:
+
+1. The user adds a new habit → stored in `localStorage`.
+2. On date click → user selects which habits were completed.
+3. The consistency chart dynamically calculates completion % using computed properties.
+
+## Final Prompts
+
+Build a Vue 3 + TypeScript Habit Tracker with a calendar view that allows users to mark daily completions, track streaks, and visualize monthly consistency with Chart.js. Use localStorage for persistence and ensure the UI updates reactively across all components.
 
 ## Project Setup
 
@@ -43,37 +65,26 @@ npm run build
 npm run lint
 ```
 
-# Habit Tracker
+## Recommended IDE Setup
 
-## Project Choice
+[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
 
-I chose to build a **Habit Tracker** web app that allows users to:
+## Recommended Browser Setup
 
-- Add, delete, and track daily habits.
-- View monthly completion rates via an interactive chart.
-- Visualize streak progress and daily completions using a simple UI.
+- Chromium-based browsers (Chrome, Edge, Brave, etc.):
+  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
+  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
+- Firefox:
+  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
+  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
 
-## Justification of Tools
+## Type Support for `.vue` Imports in TS
 
-- **Vue 3 + Composition API**: Provides modular, reactive component design for building a clean and maintainable frontend.
-- **Chart.js + vue-chartjs**: Offers a simple and flexible way to render statistical visualizations like bar and line charts.
-- **TypeScript**: Adds type safety and improves code readability.
-- **LocalStorage**: Used for simple data persistence without a backend.
+TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
 
-## High-Level Approach
+## Customize configuration
 
-The project was built using a **component-based approach**:
-
-- `Habit.vue` → Displays and manages the list of habits.
-- `Calendar.vue` → Displays the monthly calendar view where users can mark habits as complete.
-- `Consistency.vue` → Renders a monthly consistency chart using Chart.js.
-- `HabitTracker.vue` → Acts as the main controller handling all data, logic, and local storage.
-
-Data flow:
-
-1. The user adds a new habit → stored in `localStorage`.
-2. On date click → user selects which habits were completed.
-3. The consistency chart dynamically calculates completion % using computed properties.
+See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Challenges & Iterations
 
