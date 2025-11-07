@@ -4,19 +4,20 @@ import Calendar from '@/components/Calendar.vue'
 import Habit from '@/components/Habit.vue'
 import Consistency from '@/components/Consistency.vue'
 
-// ====================== 数据 ======================
+// ============ 数据初始化 ============
+const today = new Date()
 const allHabits = ref<string[]>(JSON.parse(localStorage.getItem('allHabits') || '[]'))
 const habitRecords = ref<Record<string, string[]>>(
   JSON.parse(localStorage.getItem('habitRecords') || '{}'),
 )
 
+// ============ UI 状态 ============
 const showAddHabitDialog = ref(false)
 const showSelectHabitDialog = ref(false)
 const newHabit = ref('')
 const selectedDate = ref('')
 
-// ====================== 日历数据 ======================
-const today = new Date()
+// ============ 日历控制 ============
 const selectedYear = ref(today.getFullYear())
 const selectedMonth = ref(today.getMonth())
 
@@ -35,71 +36,49 @@ const monthNames = [
   'November',
   'December',
 ]
-
 const yearOptions = Array.from({ length: 6 }, (_, i) => today.getFullYear() - 3 + i)
 
-// 计算日历日期
+// 生成当月日期数据
 const calendarDays = computed(() => {
   const year = selectedYear.value
   const month = selectedMonth.value
   const days: { date: string | null }[] = []
 
   const firstDay = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const totalDays = new Date(year, month + 1, 0).getDate()
 
-  // 前置空格
   for (let i = 0; i < firstDay; i++) days.push({ date: null })
-  // 当月日期
-  for (let d = 1; d <= daysInMonth; d++) {
+  for (let d = 1; d <= totalDays; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     days.push({ date: dateStr })
   }
   return days
 })
 
+// 是否今天
 const isToday = (dateStr: string | null) => {
   if (!dateStr) return false
   const d = new Date(dateStr)
-  return (
-    d.getDate() === today.getDate() &&
-    d.getMonth() === today.getMonth() &&
-    d.getFullYear() === today.getFullYear()
-  )
+  return d.toDateString() === today.toDateString()
 }
 
-// ====================== 操作逻辑 ======================
+// ============ 操作逻辑 ============
+const saveToLocal = () => {
+  localStorage.setItem('allHabits', JSON.stringify(allHabits.value))
+  localStorage.setItem('habitRecords', JSON.stringify(habitRecords.value))
+}
 
-// 添加新习惯
+// 添加习惯
 const addNewHabit = () => {
-  if (!newHabit.value.trim()) return
-  allHabits.value.push(newHabit.value.trim())
+  const habit = newHabit.value.trim()
+  if (!habit) return
+  allHabits.value.push(habit)
   saveToLocal()
   newHabit.value = ''
   showAddHabitDialog.value = false
 }
 
-// 点击日期 => 选择为哪一个 habit 标记完成
-const openSelectHabitDialog = (date: string) => {
-  selectedDate.value = date
-  showSelectHabitDialog.value = true
-}
-
-// 在选中的日期标记/取消某个 habit
-const toggleHabitForDate = (habit: string) => {
-  const date = selectedDate.value
-  if (!date) return
-
-  const list = habitRecords.value[date] || []
-  const idx = list.indexOf(habit)
-
-  if (idx >= 0) list.splice(idx, 1)
-  else list.push(habit)
-
-  habitRecords.value[date] = list
-  saveToLocal()
-}
-
-// 删除习惯（同时清除对应记录）
+// 删除习惯并清理记录
 const deleteHabit = (habit: string) => {
   allHabits.value = allHabits.value.filter((h) => h !== habit)
   for (const date in habitRecords.value) {
@@ -109,57 +88,56 @@ const deleteHabit = (habit: string) => {
   saveToLocal()
 }
 
-// 判断某日期是否完成某 habit
-const isHabitDoneOnDate = (habit: string, date: string) => {
-  return habitRecords.value[date]?.includes(habit) ?? false
+// 点击日期 => 打开习惯选择
+const openSelectHabitDialog = (date: string) => {
+  selectedDate.value = date
+  showSelectHabitDialog.value = true
 }
 
-// ====================== 统计 ======================
+// 选中日期标记习惯完成
+const toggleHabitForDate = (habit: string) => {
+  const date = selectedDate.value
+  if (!date) return
+  const list = habitRecords.value[date] || []
+  const idx = list.indexOf(habit)
+  if (idx >= 0) list.splice(idx, 1)
+  else list.push(habit)
+  habitRecords.value[date] = list
+  saveToLocal()
+}
 
-// streak：某 habit 连续完成天数
-const habitStreak = computed(() => {
-  return (habit: string) => {
-    // 从 habitRecords 中找到所有完成该 habit 的日期
-    const completedDates = Object.keys(habitRecords.value)
-      .filter((date) => habitRecords.value[date].includes(habit))
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime()) // 从最近的日期开始
+// 某天是否完成某习惯
+const isHabitDoneOnDate = (habit: string, date: string) =>
+  habitRecords.value[date]?.includes(habit) ?? false
 
-    if (completedDates.length === 0) return 0
+// ============ 统计 ============
+const habitStreak = computed(() => (habit: string) => {
+  const completed = Object.keys(habitRecords.value)
+    .filter((d) => habitRecords.value[d].includes(habit))
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+  if (!completed.length) return 0
 
-    let streak = 1
-    for (let i = 1; i < completedDates.length; i++) {
-      const prev = new Date(completedDates[i])
-      const curr = new Date(completedDates[i - 1])
-      const diff = (curr.getTime() - prev.getTime()) / (1000 * 3600 * 24)
-
-      if (diff === 1) {
-        streak++
-      } else {
-        break
-      }
-    }
-    return streak
+  let streak = 1
+  for (let i = 1; i < completed.length; i++) {
+    const diff =
+      (new Date(completed[i - 1]).getTime() - new Date(completed[i]).getTime()) / (1000 * 3600 * 24)
+    if (diff === 1) streak++
+    else break
   }
+  return streak
 })
 
-// consistency：某 habit 本月完成比例
 const habitMonthlyConsistency = (habit: string) => {
   const year = selectedYear.value
   const month = selectedMonth.value
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const totalDays = new Date(year, month + 1, 0).getDate()
 
-  let count = 0
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    if (habitRecords.value[dateStr]?.includes(habit)) count++
+  let completed = 0
+  for (let d = 1; d <= totalDays; d++) {
+    const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    if (habitRecords.value[date]?.includes(habit)) completed++
   }
-  return ((count / daysInMonth) * 100).toFixed(1)
-}
-
-// 保存数据
-const saveToLocal = () => {
-  localStorage.setItem('allHabits', JSON.stringify(allHabits.value))
-  localStorage.setItem('habitRecords', JSON.stringify(habitRecords.value))
+  return ((completed / totalDays) * 100).toFixed(1)
 }
 </script>
 
@@ -169,7 +147,6 @@ const saveToLocal = () => {
       <h2 class="title">Habit Tracker</h2>
 
       <div class="layout">
-        <!-- 左边 Habits -->
         <Habit
           :allHabits="allHabits"
           :habitStreak="habitStreak"
@@ -177,7 +154,6 @@ const saveToLocal = () => {
           @delete="deleteHabit"
         />
 
-        <!-- 右边 Calendar -->
         <Calendar
           :days="calendarDays"
           :weekDays="weekDays"
@@ -198,25 +174,24 @@ const saveToLocal = () => {
         />
       </div>
 
-      <!-- 下方 Consistency -->
       <Consistency :allHabits="allHabits" :habitMonthlyConsistency="habitMonthlyConsistency" />
 
-      <!-- 添加新 Habit -->
+      <!-- 添加 Habit -->
       <div v-if="showAddHabitDialog" class="dialog-overlay">
         <div class="dialog">
           <h3>Add New Habit</h3>
           <input v-model="newHabit" placeholder="Habit name" class="input" />
           <div class="dialog-buttons">
-            <button @click="addNewHabit" class="btn">Add</button>
-            <button @click="showAddHabitDialog = false" class="btn cancel">Cancel</button>
+            <button @click="addNewHabit" class="btn primary">Add</button>
+            <button @click="showAddHabitDialog = false" class="btn">Cancel</button>
           </div>
         </div>
       </div>
 
-      <!-- 选择 Habit 标记完成 -->
+      <!-- 标记 Habit 完成 -->
       <div v-if="showSelectHabitDialog" class="dialog-overlay">
         <div class="dialog">
-          <h3>Select Habit for {{ selectedDate }}</h3>
+          <h3>Mark Habits for {{ selectedDate }}</h3>
           <ul class="habit-select-list">
             <li
               v-for="habit in allHabits"
@@ -225,13 +200,11 @@ const saveToLocal = () => {
               class="habit-option"
             >
               <span>{{ habit }}</span>
-              <span>
-                {{ isHabitDoneOnDate(habit, selectedDate) ? '✅' : '❌' }}
-              </span>
+              <span>{{ isHabitDoneOnDate(habit, selectedDate) ? '✅' : '❌' }}</span>
             </li>
           </ul>
           <div class="dialog-buttons">
-            <button @click="showSelectHabitDialog = false" class="btn cancel">Close</button>
+            <button @click="showSelectHabitDialog = false" class="btn">Close</button>
           </div>
         </div>
       </div>
@@ -244,7 +217,7 @@ const saveToLocal = () => {
   max-width: 1100px;
   margin: 30px auto;
   text-align: center;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .title {
@@ -257,11 +230,11 @@ const saveToLocal = () => {
 .layout {
   display: flex;
   gap: 20px;
-  align-items: flex-start;
   justify-content: center;
+  align-items: flex-start;
 }
 
-/* ======= Dialog Overlay ======= */
+/* ======= Dialog ======= */
 .dialog-overlay {
   position: fixed;
   inset: 0;
@@ -273,37 +246,29 @@ const saveToLocal = () => {
   z-index: 200;
 }
 
-/* ======= Dialog Box ======= */
 .dialog {
-  background: #ffffff;
+  background: #fff;
   padding: 24px;
   border-radius: 12px;
-  width: 360px;
+  width: 340px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .dialog h3 {
-  font-size: 20px;
-  margin-bottom: 16px;
+  font-size: 18px;
+  margin-bottom: 12px;
   color: #2d3748;
 }
 
-/* ======= Input ======= */
 .input {
-  width: 200px;
-  padding: 10px 12px;
-  margin: 10px 0 16px 0;
+  width: 80%;
+  padding: 10px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
+  margin-bottom: 16px;
   font-size: 14px;
-  outline: none;
 }
 
-.input:focus {
-  border-color: #3b82f6;
-}
-
-/* ======= Buttons ======= */
 .dialog-buttons {
   display: flex;
   justify-content: center;
@@ -316,27 +281,19 @@ const saveToLocal = () => {
   border: none;
   cursor: pointer;
   font-weight: 500;
-}
-
-.btn.cancel {
   background: #e5e7eb;
   color: #374151;
 }
 
-.btn.cancel:hover {
-  background: #d1d5db;
-}
-
-.btn:not(.cancel) {
+.btn.primary {
   background: #3b82f6;
-  color: white;
+  color: #fff;
 }
 
-.btn:not(.cancel):hover {
+.btn.primary:hover {
   background: #2563eb;
 }
 
-/* ======= Habit Select List ======= */
 .habit-select-list {
   list-style: none;
   padding: 0;
@@ -346,8 +303,7 @@ const saveToLocal = () => {
 .habit-option {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px;
+  padding: 10px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   margin-bottom: 8px;

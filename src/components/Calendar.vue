@@ -14,12 +14,12 @@
     <div class="calendar">
       <!-- 星期标题 -->
       <div
-        v-for="(d, idx) in weekDays"
-        :key="d"
+        v-for="(day, i) in weekDays"
+        :key="day"
         class="weekday"
-        :class="{ weekend: idx === 0 || idx === 6 }"
+        :class="{ weekend: i === 0 || i === 6 }"
       >
-        {{ d }}
+        {{ day }}
       </div>
 
       <!-- 日期格 -->
@@ -28,16 +28,18 @@
         :key="day.date ? `day-${day.date}` : `empty-${index}`"
         class="calendar-day"
         :class="{ today: isToday(day.date), empty: !day.date }"
-        @click="() => day.date && $emit('click-date', day.date)"
+        @click="() => day.date && emit('click-date', day.date)"
       >
-        <div v-if="day.date" class="date">{{ new Date(day.date).getDate() }}</div>
+        <template v-if="day.date">
+          <div class="date">{{ new Date(day.date).getDate() }}</div>
 
-        <!-- ✅ 当天完成的习惯 -->
-        <ul v-if="day.date" class="habit-list">
-          <li v-for="habit in habitsByDate[day.date] || []" :key="habit" class="habit-item">
-            ✅ {{ habit }}
-          </li>
-        </ul>
+          <!-- 当天完成的习惯 -->
+          <ul v-if="habitsByDate[day.date]?.length" class="habit-list">
+            <li v-for="habit in habitsByDate[day.date]" :key="habit" class="habit-item">
+              √ {{ habit }}
+            </li>
+          </ul>
+        </template>
       </div>
     </div>
   </div>
@@ -46,8 +48,12 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 
+interface DayItem {
+  date: string | null
+}
+
 const props = defineProps<{
-  days: { date: string | null }[]
+  days: DayItem[]
   weekDays: string[]
   monthNames: string[]
   yearOptions: number[]
@@ -58,42 +64,49 @@ const props = defineProps<{
   month: number
 }>()
 
-const emit = defineEmits(['change-month', 'click-date'])
+const emit = defineEmits<{
+  (e: 'change-month', payload: { year: number; month: number }): void
+  (e: 'click-date', date: string): void
+}>()
 
+// ====== 本地副本，避免直接修改父组件的 props ======
 const localYear = ref(props.year)
 const localMonth = ref(props.month)
 
-watch([() => props.year, () => props.month], ([y, m]) => {
-  localYear.value = y
-  localMonth.value = m
-})
+// 同步父组件更新
+watch(
+  () => [props.year, props.month],
+  ([y, m]) => {
+    localYear.value = y
+    localMonth.value = m
+  },
+)
 
+// 切换月份事件
 const emitChangeMonth = () => {
   emit('change-month', { year: localYear.value, month: localMonth.value })
 }
 
-// ✅ 修复后的 habitsByDate
-const habitsByDate = computed(() => {
-  return props.habitRecords || {}
-})
+// 直接使用 habitRecords，避免重复计算
+const habitsByDate = computed(() => props.habitRecords)
 </script>
 
 <style scoped>
-/* === 容器整体 === */
+/* ========== 外层容器 ========== */
 .calendar-container {
   flex: 1;
-  min-width: 650px;
+  min-width: 600px;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   padding: 20px;
 }
 
-/* === 月份选择器 === */
+/* ========== 月份选择器 ========== */
 .month-selector {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
@@ -101,16 +114,17 @@ const habitsByDate = computed(() => {
   padding: 6px 10px;
   border-radius: 6px;
   border: 1px solid #ccc;
+  background: #f9fafb;
   font-size: 14px;
-  background: #f8f9fa;
   cursor: pointer;
+  transition: background 0.2s ease;
 }
 
 .month-selector select:hover {
   background: #e9ecef;
 }
 
-/* === 星期栏 === */
+/* ========== 星期标题栏 ========== */
 .calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -118,27 +132,27 @@ const habitsByDate = computed(() => {
 }
 
 .weekday {
-  font-weight: bold;
   text-align: center;
-  padding: 6px;
-  background: #f0f2f5;
+  font-weight: 600;
+  padding: 6px 0;
   border-radius: 6px;
+  background: #f3f4f6;
   color: #333;
 }
 
 .weekday.weekend {
-  color: #c62828;
+  color: #d32f2f;
 }
 
-/* === 日期格 === */
+/* ========== 日期格 ========== */
 .calendar-day {
   border-radius: 8px;
-  min-height: 90px;
-  background-color: #fafafa;
-  box-shadow: inset 0 0 0 1px #e0e0e0;
-  position: relative;
+  min-height: 80px;
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  padding: 4px 6px;
   cursor: pointer;
-  padding: 4px;
+  transition: background 0.2s ease;
 }
 
 .calendar-day:hover {
@@ -148,27 +162,28 @@ const habitsByDate = computed(() => {
 /* 空白格 */
 .calendar-day.empty {
   background: transparent;
-  box-shadow: none;
+  border: none;
   cursor: default;
   pointer-events: none;
 }
 
-/* 当天 */
+/* 今日样式 */
 .calendar-day.today {
-  border: 2px solid #007bff;
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border: 2px solid #2563eb;
+  background: linear-gradient(135deg, #e0f2fe, #bfdbfe);
 }
 
 /* 日期数字 */
 .date {
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
   text-align: right;
-  padding-right: 4px;
+  font-weight: 600;
+  color: #374151;
+  padding-right: 2px;
+  margin-bottom: 2px;
+  font-size: 13px;
 }
 
-/* === 当天的 habit 列表 === */
+/* ========== 习惯列表 ========== */
 .habit-list {
   list-style: none;
   padding: 0;
@@ -176,13 +191,15 @@ const habitsByDate = computed(() => {
 }
 
 .habit-item {
-  background: #4caf50;
+  background: #10b981;
   color: white;
   font-size: 11px;
   padding: 2px 4px;
   border-radius: 4px;
   margin: 2px 0;
   text-align: left;
-  word-break: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

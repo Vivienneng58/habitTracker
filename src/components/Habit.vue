@@ -1,22 +1,27 @@
 <template>
-  <div class="habit-sidebar">
-    <h3>Habits</h3>
-    <ul class="habit-list-side">
+  <aside class="habit-sidebar">
+    <h3 class="sidebar-title">Habits</h3>
+
+    <ul class="habit-list">
       <li
         v-for="habit in allHabits"
         :key="habit"
+        class="habit-item"
         :class="{ selected: selectedHabit === habit }"
       >
         <div class="habit-info" @click="$emit('select', habit)">
           <div class="habit-name">{{ habit }}</div>
           <div class="habit-streak">🔥 {{ habitStreak(habit) }} days</div>
         </div>
-        <button class="delete-btn" @click="$emit('delete', habit)">X</button>
+
+        <button class="delete-btn" title="Delete habit" @click.stop="$emit('delete', habit)">
+          ✕
+        </button>
       </li>
     </ul>
 
     <button class="add-habit-btn" @click="$emit('add')">＋ Add Habit</button>
-  </div>
+  </aside>
 </template>
 
 <script setup lang="ts">
@@ -26,76 +31,107 @@ defineProps<{
   habitStreak: (habit: string) => number
 }>()
 
-defineEmits(["select", "delete", "add"])
+defineEmits(['select', 'delete', 'add'])
 </script>
 
 <style scoped>
+/* === 容器整体 === */
 .habit-sidebar {
-  width: 220px;
-  flex-shrink: 0;
-  background: #f5f7fa;
-  padding: 15px;
-  border-radius: 8px;
+  width: 200px;
+  background: #f9fbfd;
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
   height: fit-content;
 }
 
-.habit-list-side {
-  list-style: none;
-  padding: 0;
-  margin: 10px 0;
+/* === 标题 === */
+.sidebar-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
 }
 
-.habit-list-side li {
-  background: white;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  padding: 8px;
+/* === 列表 === */
+.habit-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+
+.habit-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #ddd;
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  transition: all 0.25s ease;
+  cursor: pointer;
 }
 
-.habit-list-side li.selected {
-  border: 2px solid #007bff;
-  background: #e8f0fe;
-}
-
+/* === 习惯信息 === */
 .habit-info {
   flex: 1;
-  cursor: pointer;
+  overflow: hidden;
 }
 
-.delete-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  color: #888;
-  transition: color 0.2s;
-}
-
-.delete-btn:hover {
-  color: #ff4444;
+.habit-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .habit-streak {
-  font-size: 13px;
-  color: #ff5722;
+  font-size: 12px;
+  color: #ff7043;
+  margin-top: 2px;
 }
 
+/* === 删除按钮 === */
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: #ffecec;
+  color: #e53935;
+}
+
+/* === 添加按钮 === */
 .add-habit-btn {
   margin-top: 10px;
   width: 100%;
   background: #007bff;
   color: white;
-  padding: 6px 0;
+  font-weight: 500;
+  padding: 8px 0;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  transition:
+    background 0.25s ease,
+    transform 0.1s ease;
 }
 
 .add-habit-btn:hover {
-  background: #0056b3;
+  background: #0062cc;
+  transform: translateY(-1px);
 }
 </style>
