@@ -90,26 +90,17 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Challenges & Iterations
 
-1. Calendar Reactivity Issues
+1. Calendar Reactivity
 
-Challenge:
-The calendar view didn’t update immediately when a user marked or unmarked a habit. The reactivity between components wasn’t working as expected.
+Challenge: The calendar didn’t update immediately when marking or unmarking habits.
+Iteration: Restructured the data flow using reactive() and computed() to ensure Vue tracked changes properly.
 
-Iteration:
-I fixed this by restructuring the data flow between habitTracker.vue and calendar.vue, using reactive() and computed() properly to ensure Vue’s reactivity system tracked updates correctly.
+2. v-model Binding
 
-2. v-model Binding Problems
+Challenge: Input fields cleared their values after losing focus.
+Iteration: Rewrote the components using Composition API with proper two-way binding (defineModel()), ensuring stable synchronization between parent and child.
 
-Challenge:
-Some input fields cleared their values after losing focus due to incorrect v-model setup in custom components.
+3. Habit Color Assignment
 
-Iteration:
-I rewrote these components using the Composition API with proper two-way binding (defineModel()), ensuring stable synchronization between parent and child components.
-
-3. Chart Visualization Optimization
-
-Challenge:
-The monthly consistency chart was cluttered and hard to read when multiple habits were tracked.
-
-Iteration:
-I optimized the chart layout by reducing bar thickness, limiting visible tick labels, and adjusting axis intervals for a cleaner, more readable visualization.
+Challenge: Habit colors sometimes repeated, making it hard to distinguish habits.
+Iteration: Implemented a unique color assignment system that avoids consecutive color duplicates for different habits.
