@@ -119,14 +119,24 @@ const isHabitDoneOnDate = (habit: string, date: string) => {
 // streak：某 habit 连续完成天数
 const habitStreak = computed(() => {
   return (habit: string) => {
-    let streak = 0
-    const currentDate = new Date(today)
-    while (true) {
-      const dateStr = currentDate.toISOString().split('T')[0]
-      if (habitRecords.value[dateStr]?.includes(habit)) {
+    // 从 habitRecords 中找到所有完成该 habit 的日期
+    const completedDates = Object.keys(habitRecords.value)
+      .filter((date) => habitRecords.value[date].includes(habit))
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime()) // 从最近的日期开始
+
+    if (completedDates.length === 0) return 0
+
+    let streak = 1
+    for (let i = 1; i < completedDates.length; i++) {
+      const prev = new Date(completedDates[i])
+      const curr = new Date(completedDates[i - 1])
+      const diff = (curr.getTime() - prev.getTime()) / (1000 * 3600 * 24)
+
+      if (diff === 1) {
         streak++
-        currentDate.setDate(currentDate.getDate() - 1)
-      } else break
+      } else {
+        break
+      }
     }
     return streak
   }
