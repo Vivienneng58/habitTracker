@@ -31,7 +31,7 @@ The project was built using a **component-based approach**:
 - `Habit.vue` → Displays and manages the list of habits.
 - `Calendar.vue` → Displays the monthly calendar view where users can mark habits as complete.
 - `Consistency.vue` → Renders a monthly consistency chart using Chart.js.
-- `App.vue` → Acts as the main controller handling all data, logic, and local storage.
+- `HomeView.vue` → Acts as the main controller handling all data, logic, and local storage.
 
 Data flow:
 
